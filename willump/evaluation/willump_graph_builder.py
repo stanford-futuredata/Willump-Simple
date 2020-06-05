@@ -32,7 +32,8 @@ class WillumpGraphBuilder(ast.NodeVisitor):
         function_node: WillumpGraphNode = WillumpGraphNode(function_name=function_name,
                                                            output_name=output_name,
                                                            input_names=input_names,
-                                                           input_nodes=input_nodes)
+                                                           input_nodes=input_nodes,
+                                                           cost=1)
         self._variable_dict[output_name] = function_node
 
     def analyze_return(self, node: ast.Return) -> None:
@@ -52,7 +53,8 @@ class WillumpGraphBuilder(ast.NodeVisitor):
                                                         output_name=output_name,
                                                         input_names=input_names,
                                                         input_nodes=input_nodes,
-                                                        model_param=model_param)
+                                                        model_param=model_param,
+                                                        cost=1)
         self._model_node = model_node
 
     def get_model_node(self):

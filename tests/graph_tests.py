@@ -2,6 +2,7 @@ import ast
 import inspect
 import unittest
 
+from willump.evaluation.willump_executor import willump_execute
 from willump.graph.willump_graph_node import WillumpGraphNode
 from willump.evaluation.willump_graph_builder import WillumpGraphBuilder
 
@@ -19,6 +20,13 @@ def model(m, numbers):
 
 
 def foobar(a, b, m):
+    c = foo(a)
+    d = bar(b)
+    return model(m, [c, d])
+
+
+@willump_execute()
+def foobar_decorated(a, b, m):
     c = foo(a)
     d = bar(b)
     return model(m, [c, d])
@@ -43,6 +51,12 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(bar_node.function_name, "bar")
         self.assertEqual(bar_node.output_name, "d")
         self.assertEqual(bar_node.input_names[0], "b")
+
+    def test_decorator(self):
+        self.assertEqual(foobar_decorated(1, 2, 3), 9)
+        self.assertEqual(foobar_decorated(1, 2, 3), 9)
+        self.assertEqual(foobar_decorated(1, 2, 3), 9)
+        self.assertEqual(foobar_decorated(1, 2, 3), 9)
 
 
 if __name__ == '__main__':
