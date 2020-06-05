@@ -1,3 +1,5 @@
+import ast
+import inspect
 import unittest
 
 import numpy as np
@@ -8,6 +10,9 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
+
+from willump.evaluation.willump_executor import instrument_function
+from willump.evaluation.willump_graph_builder import WillumpGraphBuilder
 
 base_directory = "tests/test_resources/product_resources/"
 
@@ -93,6 +98,33 @@ class CascadesTests(unittest.TestCase):
         preds = product_predict_pipeline(self.test_df, model, self.title_vectorizer, self.color_vectorizer,
                                          self.brand_vectorizer)
         self.assertAlmostEqual(product_score(preds, self.test_y), 0.570612, 6)
+
+    def test_timer_graph_builder(self):
+        timing_map, model_data = {}, {}
+        instrumented_train = instrument_function(product_train_pipeline, timing_map, model_data)
+        instrumented_predict = instrument_function(product_predict_pipeline, {}, {})
+        model = instrumented_train(self.train_df, self.train_y, self.title_vectorizer, self.color_vectorizer,
+                                   self.brand_vectorizer)
+        preds = instrumented_predict(self.test_df, model, self.title_vectorizer, self.color_vectorizer,
+                                     self.brand_vectorizer)
+        self.assertAlmostEqual(product_score(preds, self.test_y), 0.570612, 6)
+        self.assertTrue('title_result' in timing_map and 'color_result' in timing_map and 'brand_result' in timing_map)
+        self.assertTrue((model_data['params'] == self.train_y).all())
+        train_source = inspect.getsource(product_train_pipeline)
+        train_ast = ast.parse(train_source)
+        graph_builder = WillumpGraphBuilder(timing_map)
+        graph_builder.visit(train_ast)
+        model_node = graph_builder.get_model_node()
+        self.assertEqual(model_node.function_name, "product_train")
+        self.assertEqual(model_node.model_param, "input_y")
+        self.assertEqual(model_node.input_names[0], "title_result")
+        self.assertEqual(model_node.input_names[1], "color_result")
+        self.assertEqual(model_node.input_names[2], "brand_result")
+        color_node = model_node.input_nodes[1]
+        self.assertEqual(color_node.function_name, "transform_data")
+        self.assertEqual(color_node.output_name, "color_result")
+        self.assertEqual(color_node.input_names[0], "input_x")
+        self.assertEqual(color_node.input_names[1], "color_vect")
 
 
 if __name__ == '__main__':
