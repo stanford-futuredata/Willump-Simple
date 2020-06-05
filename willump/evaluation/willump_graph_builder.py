@@ -1,5 +1,5 @@
 import ast
-from typing import MutableMapping
+from typing import MutableMapping, Mapping
 
 from willump.graph.willump_graph_node import WillumpGraphNode
 
@@ -7,6 +7,9 @@ from willump.graph.willump_graph_node import WillumpGraphNode
 class WillumpGraphBuilder(ast.NodeVisitor):
     _variable_dict: MutableMapping[str, WillumpGraphNode] = {}
     _model_node: WillumpGraphNode
+
+    def __init__(self, timing_map: Mapping[str, float]):
+        self._timing_map = timing_map
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         for entry in node.body:
@@ -33,7 +36,7 @@ class WillumpGraphBuilder(ast.NodeVisitor):
                                                            output_name=output_name,
                                                            input_names=input_names,
                                                            input_nodes=input_nodes,
-                                                           cost=1)
+                                                           cost=self._timing_map[output_name])
         self._variable_dict[output_name] = function_node
 
     def analyze_return(self, node: ast.Return) -> None:
@@ -54,7 +57,7 @@ class WillumpGraphBuilder(ast.NodeVisitor):
                                                         input_names=input_names,
                                                         input_nodes=input_nodes,
                                                         model_param=model_param,
-                                                        cost=1)
+                                                        cost=0)
         self._model_node = model_node
 
     def get_model_node(self):

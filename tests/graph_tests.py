@@ -1,8 +1,10 @@
 import ast
+import copy
+import importlib
 import inspect
 import unittest
 
-from willump.evaluation.willump_executor import willump_execute
+from willump.evaluation.willump_executor import willump_execute, instrument_function
 from willump.graph.willump_graph_node import WillumpGraphNode
 from willump.evaluation.willump_graph_builder import WillumpGraphBuilder
 
@@ -36,7 +38,7 @@ class GraphTests(unittest.TestCase):
     def test_graph_builder(self):
         foobar_source = inspect.getsource(foobar)
         foobar_ast = ast.parse(foobar_source)
-        graph_builder = WillumpGraphBuilder()
+        graph_builder = WillumpGraphBuilder({'c': 1, 'd': 1})
         graph_builder.visit(foobar_ast)
         model_node: WillumpGraphNode = graph_builder.get_model_node()
         self.assertEqual(model_node.function_name, "model")
@@ -51,6 +53,15 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(bar_node.function_name, "bar")
         self.assertEqual(bar_node.output_name, "d")
         self.assertEqual(bar_node.input_names[0], "b")
+
+    def test_timer_instrumentation(self):
+        timing_map = {}
+        model_data = {}
+        instrumented_foobar = instrument_function(foobar, timing_map, model_data)
+        self.assertEqual(instrumented_foobar(1, 2, 3), 9)
+        self.assertTrue('c' in timing_map and 'd' in timing_map)
+        self.assertEqual(model_data['params'], 3)
+        self.assertEqual(model_data['inputs'], [2, 4])
 
     def test_decorator(self):
         self.assertEqual(foobar_decorated(1, 2, 3), 9)
