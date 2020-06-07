@@ -11,6 +11,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 
+import willump.evaluation.construct_cascades
 from willump.evaluation.willump_executor import instrument_function
 from willump.evaluation.willump_graph_builder import WillumpGraphBuilder
 
@@ -125,6 +126,21 @@ class CascadesTests(unittest.TestCase):
         self.assertEqual(color_node.output_name, "color_result")
         self.assertEqual(color_node.input_names[0], "input_x")
         self.assertEqual(color_node.input_names[1], "color_vect")
+
+    def test_calculate_feature_importances(self):
+        title_result = transform_data(self.train_df, self.title_vectorizer)
+        color_result = transform_data(self.train_df, self.color_vectorizer)
+        brand_result = transform_data(self.train_df, self.brand_vectorizer)
+        X = [title_result, color_result, brand_result]
+        train_X, valid_X, train_y, valid_y = \
+            willump.evaluation.construct_cascades.train_test_split(X, self.train_y, test_size=0.25, random_state=42)
+        train_set_full_model = product_train(train_y, train_X)
+        feature_importances = \
+            willump.evaluation.construct_cascades.calculate_feature_importances(
+                train_set_full_model, valid_X, valid_y, product_predict, product_score,
+                ["title_result", "color_result", "brand_result"])
+        assert(feature_importances["title_result"] > feature_importances["brand_result"] > 0)
+        assert(feature_importances["brand_result"] > feature_importances["color_result"])
 
 
 if __name__ == '__main__':
