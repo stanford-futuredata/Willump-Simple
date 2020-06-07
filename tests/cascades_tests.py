@@ -139,8 +139,19 @@ class CascadesTests(unittest.TestCase):
             willump.evaluation.construct_cascades.calculate_feature_importances(
                 train_set_full_model, valid_X, valid_y, product_predict, product_score,
                 ["title_result", "color_result", "brand_result"])
-        assert(feature_importances["title_result"] > feature_importances["brand_result"] > 0)
-        assert(feature_importances["brand_result"] > feature_importances["color_result"])
+        self.assertTrue(feature_importances["title_result"] > feature_importances["brand_result"] > 0)
+        self.assertTrue(feature_importances["brand_result"] > feature_importances["color_result"])
+
+    def test_select_best_features(self):
+        feature_groups = ["a", "b", "c", "d"]
+        feature_costs = {"a": 0.11, "b": 0.11, "c": 0.11, "d": 0.2}
+        feature_importances = {"a": 0.1, "b": 0.2, "c": 0.2, "d": 0.3}
+        selected_features = willump.evaluation.construct_cascades.select_best_features(feature_groups, feature_costs,
+                                                                                       feature_importances, 0.21)
+        self.assertEqual(selected_features, ["d"])
+        selected_features = willump.evaluation.construct_cascades.select_best_features(feature_groups, feature_costs,
+                                                                                       feature_importances, 0.23)
+        self.assertEqual(selected_features, ["b", "c"])
 
 
 if __name__ == '__main__':
