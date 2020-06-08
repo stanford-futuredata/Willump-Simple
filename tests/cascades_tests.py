@@ -78,6 +78,16 @@ def product_predict_pipeline(input_x, model, title_vect, color_vect, brand_vect)
     return product_predict(model, [title_result, color_result, brand_result])
 
 
+@willump.evaluation.willump_executor.willump_execute(predict_function=product_predict,
+                                                     predict_proba_function=product_predict_proba,
+                                                     predict_cascades_dict=cascades_dict)
+def product_predict_pipeline_cascades(input_x, model, title_vect, color_vect, brand_vect):
+    title_result = transform_data(input_x, title_vect)
+    color_result = transform_data(input_x, color_vect)
+    brand_result = transform_data(input_x, brand_vect)
+    return product_predict(model, [title_result, color_result, brand_result])
+
+
 class CascadesTests(unittest.TestCase):
 
     def setUp(self):
@@ -170,16 +180,22 @@ class CascadesTests(unittest.TestCase):
         selected_features = [feature_groups[i] for i in selected_features]
         self.assertEqual(selected_features, ["b", "c"])
 
-    def test_train_cascades(self):
+    def test_cascades(self):
         product_train_pipeline_cascades(self.train_df, self.train_y, self.title_vectorizer, self.color_vectorizer,
                                         self.brand_vectorizer)
         product_train_pipeline_cascades(self.train_df, self.train_y, self.title_vectorizer, self.color_vectorizer,
                                         self.brand_vectorizer)
         self.assertEqual(cascades_dict["selected_feature_indices"], [2])
         self.assertEqual(cascades_dict["cascade_threshold"], 0.7)
-        preds = product_predict_pipeline(self.test_df, cascades_dict["full_model"], self.title_vectorizer,
-                                         self.color_vectorizer, self.brand_vectorizer)
+        preds = product_predict_pipeline_cascades(self.test_df, cascades_dict["full_model"], self.title_vectorizer,
+                                                  self.color_vectorizer, self.brand_vectorizer)
         self.assertAlmostEqual(product_score(preds, self.test_y), 0.570612, 6)
+        preds = product_predict_pipeline_cascades(self.test_df, cascades_dict["full_model"], self.title_vectorizer,
+                                                  self.color_vectorizer, self.brand_vectorizer)
+        self.assertAlmostEqual(product_score(preds, self.test_y), 0.567893, 6)
+        preds = product_predict_pipeline_cascades(self.test_df, cascades_dict["full_model"], self.title_vectorizer,
+                                                  self.color_vectorizer, self.brand_vectorizer)
+        self.assertAlmostEqual(product_score(preds, self.test_y), 0.567893, 6)
 
 
 if __name__ == '__main__':

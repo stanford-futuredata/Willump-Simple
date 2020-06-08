@@ -2,12 +2,13 @@ import ast
 import copy
 import importlib
 import inspect
-from typing import Callable, MutableMapping
+from typing import Callable, MutableMapping, Mapping
 
 from willump.evaluation.willump_graph_builder import WillumpGraphBuilder
 from willump.evaluation.willump_runtime_timer import WillumpRuntimeTimer
 from willump.graph.willump_graph_node import WillumpGraphNode
 from willump.evaluation.cascades_construct import construct_cascades
+from willump.evaluation.cascades_predict import predict_cascades
 
 timing_map_set: MutableMapping[str, MutableMapping[str, float]] = {}
 model_data_set: MutableMapping[str, MutableMapping[str, object]] = {}
@@ -40,7 +41,8 @@ def instrument_function(func: Callable, timing_map: MutableMapping[str, float],
 
 def willump_execute(train_function: Callable = None, predict_function: Callable = None,
                     predict_proba_function: Callable = None, score_function: Callable = None,
-                    train_cascades_dict: MutableMapping = None) -> Callable:
+                    train_cascades_dict: MutableMapping = None,
+                    predict_cascades_dict: Mapping = None) -> Callable:
     def willump_execute_inner(func: Callable) -> Callable:
         func_id: str = "willump_func_id%s" % func.__name__
 
@@ -66,6 +68,14 @@ def willump_execute(train_function: Callable = None, predict_function: Callable 
                                        predict_proba_function, score_function,
                                        train_cascades_dict)
                     return train_cascades_dict["full_model"]
+                elif predict_cascades_dict is not None:
+                    cascades_func = predict_cascades(func,
+                                                     model_node,
+                                                     predict_function,
+                                                     predict_proba_function,
+                                                     predict_cascades_dict)
+                    willump_final_func_set[func_id] = cascades_func
+                    return cascades_func(*args)
                 else:
                     willump_final_func_set[func_id] = func
                     return func(*args)
