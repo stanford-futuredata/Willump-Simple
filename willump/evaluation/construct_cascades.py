@@ -1,9 +1,9 @@
 from typing import Mapping, Callable, MutableMapping, List
 
-from willump.graph.willump_graph_node import WillumpGraphNode
-import sklearn
-import pandas as pd
 import numpy as np
+import sklearn
+
+from willump.graph.willump_graph_node import WillumpGraphNode
 
 
 def construct_cascades(model_data: Mapping,
@@ -22,6 +22,32 @@ def construct_cascades(model_data: Mapping,
                                                         predict_function=predict_function,
                                                         score_function=score_function,
                                                         feature_groups=feature_groups)
+    total_feature_cost = sum(feature_costs.values())
+    best_selected_feature_indices, selected_threshold, min_expected_cost = None, None, np.inf
+    last_candidate_length = 0
+    for cost_cutoff in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]:
+        selected_indices = select_features(feature_costs=feature_costs,
+                                           feature_importances=feature_importances,
+                                           cost_cutoff=cost_cutoff * total_feature_cost)
+        if len(selected_indices) != last_candidate_length:
+            last_candidate_length = len(selected_indices)
+            selected_feature_cost = sum(feature_costs[feature_groups[i]] for i in selected_indices)
+            threshold, expected_cost = calculate_feature_set_performance(train_X, train_y, valid_X, valid_y,
+                                                                         selected_indices,
+                                                                         train_function, predict_function,
+                                                                         predict_proba_function, score_function,
+                                                                         train_set_full_model,
+                                                                         selected_feature_cost,
+                                                                         total_feature_cost)
+            print("Cutoff: %f Threshold: %f Expected Cost: %f" % (cost_cutoff, threshold, expected_cost))
+            if expected_cost < min_expected_cost:
+                best_selected_feature_indices = selected_indices
+                selected_threshold = threshold
+                min_expected_cost = expected_cost
+    cascades_dict["selected_feature_indices"] = best_selected_feature_indices
+    cascades_dict["cascade_threshold"] = selected_threshold
+    cascades_dict["full_model"] = train_function(y, X)
+    cascades_dict["approximate_model"] = train_function(y, [X[i] for i in best_selected_feature_indices])
 
 
 def calculate_feature_importances(train_set_full_model, valid_X, valid_y, predict_function, score_function,
@@ -42,7 +68,7 @@ def calculate_feature_importances(train_set_full_model, valid_X, valid_y, predic
     return feature_importances
 
 
-def select_best_features(feature_groups, feature_costs, feature_importances, cost_cutoff):
+def select_features(feature_costs, feature_importances, cost_cutoff):
     def knapsack_dp(values, weights, capacity):
         # Credit: https://gist.github.com/KaiyangZhou/71a473b1561e0ea64f97d0132fe07736
         n_items = len(values)
@@ -67,13 +93,45 @@ def select_best_features(feature_groups, feature_costs, feature_importances, cos
         picks.sort()
         picks = [x - 1 for x in picks]  # change to 0-index
         return picks
+
     scaled_total_cost = 1000
     total_cost = sum(feature_costs.values())
     scale_factor = scaled_total_cost / total_cost
     scaled_feature_costs = [round(c * scale_factor) for c in feature_costs.values()]
     scaled_cost_cutoff = round(cost_cutoff * scale_factor)
     selected_indices = knapsack_dp(list(feature_importances.values()), scaled_feature_costs, scaled_cost_cutoff)
-    return [feature_groups[i] for i in selected_indices]
+    return selected_indices
+
+
+def calculate_feature_set_performance(train_X, train_y, valid_X, valid_y, selected_indices,
+                                      train_function, predict_function,
+                                      predict_proba_function, score_function,
+                                      train_set_full_model,
+                                      selected_cost,
+                                      total_cost,
+                                      accuracy_threshold=0.001):
+    full_model_preds = predict_function(train_set_full_model, valid_X)
+    full_model_score = score_function(valid_y, full_model_preds)
+    selected_train_X = [train_X[i] for i in selected_indices]
+    selected_valid_X = [valid_X[i] for i in selected_indices]
+    approximate_model = train_function(train_y, selected_train_X)
+    approximate_confidences = predict_proba_function(approximate_model, selected_valid_X)
+    approximate_preds = predict_function(approximate_model, selected_valid_X)
+    threshold_to_expected_query_cost_map = {}
+    for cascade_threshold in [0.6, 0.7, 0.8, 0.9, 1.0]:
+        cascade_preds = full_model_preds.copy()
+        num_approximated = 0
+        for i in range(len(approximate_confidences)):
+            if approximate_confidences[i] > cascade_threshold or approximate_confidences[i] < 1 - cascade_threshold:
+                num_approximated += 1
+                cascade_preds[i] = approximate_preds[i]
+        combined_score = score_function(valid_y, cascade_preds)
+        frac_approximated = num_approximated / len(cascade_preds)
+        combined_cost = frac_approximated * selected_cost + (1 - frac_approximated) * total_cost
+        if combined_score > full_model_score - accuracy_threshold:
+            threshold_to_expected_query_cost_map[cascade_threshold] = combined_cost
+    best_threshold, best_cost = min(threshold_to_expected_query_cost_map.items(), key=lambda x: x[1])
+    return best_threshold, best_cost
 
 
 def train_test_split(X, y, test_size, random_state):

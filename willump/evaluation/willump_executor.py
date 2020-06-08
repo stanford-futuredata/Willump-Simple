@@ -7,6 +7,7 @@ from typing import Callable, MutableMapping
 from willump.evaluation.willump_graph_builder import WillumpGraphBuilder
 from willump.evaluation.willump_runtime_timer import WillumpRuntimeTimer
 from willump.graph.willump_graph_node import WillumpGraphNode
+from willump.evaluation.construct_cascades import construct_cascades
 
 timing_map_set: MutableMapping[str, MutableMapping[str, float]] = {}
 model_data_set: MutableMapping[str, MutableMapping[str, object]] = {}
@@ -37,7 +38,9 @@ def instrument_function(func: Callable, timing_map: MutableMapping[str, float],
     return local_namespace[function_name]
 
 
-def willump_execute() -> Callable:
+def willump_execute(train_function: Callable = None, predict_function: Callable = None,
+                    predict_proba_function: Callable = None, score_function: Callable = None,
+                    train_cascades_dict: MutableMapping = None) -> Callable:
     def willump_execute_inner(func: Callable) -> Callable:
         func_id: str = "willump_func_id%s" % func.__name__
 
@@ -56,8 +59,16 @@ def willump_execute() -> Callable:
                 graph_builder = WillumpGraphBuilder(timing_map)
                 graph_builder.visit(function_ast)
                 model_node: WillumpGraphNode = graph_builder.get_model_node()
-                willump_final_func_set[func_id] = func
-                return func(*args)
+                if train_cascades_dict is not None:
+                    construct_cascades(model_data,
+                                       model_node,
+                                       train_function, predict_function,
+                                       predict_proba_function, score_function,
+                                       train_cascades_dict)
+                    return train_cascades_dict["full_model"]
+                else:
+                    willump_final_func_set[func_id] = func
+                    return func(*args)
             else:
                 return willump_final_func_set[func_id](*args)
 

@@ -56,6 +56,21 @@ def product_train_pipeline(input_x, input_y, title_vect, color_vect, brand_vect)
     return product_train(input_y, [title_result, color_result, brand_result])
 
 
+cascades_dict = {}
+
+
+@willump.evaluation.willump_executor.willump_execute(train_function=product_train,
+                                                     predict_function=product_predict,
+                                                     predict_proba_function=product_predict_proba,
+                                                     score_function=product_score,
+                                                     train_cascades_dict=cascades_dict)
+def product_train_pipeline_cascades(input_x, input_y, title_vect, color_vect, brand_vect):
+    title_result = transform_data(input_x, title_vect)
+    color_result = transform_data(input_x, color_vect)
+    brand_result = transform_data(input_x, brand_vect)
+    return product_train(input_y, [title_result, color_result, brand_result])
+
+
 def product_predict_pipeline(input_x, model, title_vect, color_vect, brand_vect):
     title_result = transform_data(input_x, title_vect)
     color_result = transform_data(input_x, color_vect)
@@ -146,12 +161,25 @@ class CascadesTests(unittest.TestCase):
         feature_groups = ["a", "b", "c", "d"]
         feature_costs = {"a": 0.11, "b": 0.11, "c": 0.11, "d": 0.2}
         feature_importances = {"a": 0.1, "b": 0.2, "c": 0.2, "d": 0.3}
-        selected_features = willump.evaluation.construct_cascades.select_best_features(feature_groups, feature_costs,
-                                                                                       feature_importances, 0.21)
+        selected_features = willump.evaluation.construct_cascades.select_features(feature_costs,
+                                                                                  feature_importances, 0.21)
+        selected_features = [feature_groups[i] for i in selected_features]
         self.assertEqual(selected_features, ["d"])
-        selected_features = willump.evaluation.construct_cascades.select_best_features(feature_groups, feature_costs,
-                                                                                       feature_importances, 0.23)
+        selected_features = willump.evaluation.construct_cascades.select_features(feature_costs,
+                                                                                  feature_importances, 0.23)
+        selected_features = [feature_groups[i] for i in selected_features]
         self.assertEqual(selected_features, ["b", "c"])
+
+    def test_train_cascades(self):
+        product_train_pipeline_cascades(self.train_df, self.train_y, self.title_vectorizer, self.color_vectorizer,
+                                        self.brand_vectorizer)
+        product_train_pipeline_cascades(self.train_df, self.train_y, self.title_vectorizer, self.color_vectorizer,
+                                        self.brand_vectorizer)
+        self.assertEqual(cascades_dict["selected_feature_indices"], [2])
+        self.assertEqual(cascades_dict["cascade_threshold"], 0.7)
+        preds = product_predict_pipeline(self.test_df, cascades_dict["full_model"], self.title_vectorizer,
+                                         self.color_vectorizer, self.brand_vectorizer)
+        self.assertAlmostEqual(product_score(preds, self.test_y), 0.570612, 6)
 
 
 if __name__ == '__main__':
