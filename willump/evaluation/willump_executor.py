@@ -7,7 +7,7 @@ from typing import Callable, MutableMapping
 from willump.evaluation.willump_graph_builder import WillumpGraphBuilder
 from willump.evaluation.willump_runtime_timer import WillumpRuntimeTimer
 from willump.graph.willump_graph_node import WillumpGraphNode
-from willump.evaluation.construct_cascades import construct_cascades
+from willump.evaluation.cascades_construct import construct_cascades
 
 timing_map_set: MutableMapping[str, MutableMapping[str, float]] = {}
 model_data_set: MutableMapping[str, MutableMapping[str, object]] = {}

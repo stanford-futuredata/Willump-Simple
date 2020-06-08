@@ -11,7 +11,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 
-import willump.evaluation.construct_cascades
+import willump.evaluation.cascades_construct
 from willump.evaluation.willump_executor import instrument_function
 from willump.evaluation.willump_graph_builder import WillumpGraphBuilder
 
@@ -148,10 +148,10 @@ class CascadesTests(unittest.TestCase):
         brand_result = transform_data(self.train_df, self.brand_vectorizer)
         X = [title_result, color_result, brand_result]
         train_X, valid_X, train_y, valid_y = \
-            willump.evaluation.construct_cascades.train_test_split(X, self.train_y, test_size=0.25, random_state=42)
+            willump.evaluation.cascades_construct.train_test_split(X, self.train_y, test_size=0.25, random_state=42)
         train_set_full_model = product_train(train_y, train_X)
         feature_importances = \
-            willump.evaluation.construct_cascades.calculate_feature_importances(
+            willump.evaluation.cascades_construct.calculate_feature_importances(
                 train_set_full_model, valid_X, valid_y, product_predict, product_score,
                 ["title_result", "color_result", "brand_result"])
         self.assertTrue(feature_importances["title_result"] > feature_importances["brand_result"] > 0)
@@ -161,11 +161,11 @@ class CascadesTests(unittest.TestCase):
         feature_groups = ["a", "b", "c", "d"]
         feature_costs = {"a": 0.11, "b": 0.11, "c": 0.11, "d": 0.2}
         feature_importances = {"a": 0.1, "b": 0.2, "c": 0.2, "d": 0.3}
-        selected_features = willump.evaluation.construct_cascades.select_features(feature_costs,
+        selected_features = willump.evaluation.cascades_construct.select_features(feature_costs,
                                                                                   feature_importances, 0.21)
         selected_features = [feature_groups[i] for i in selected_features]
         self.assertEqual(selected_features, ["d"])
-        selected_features = willump.evaluation.construct_cascades.select_features(feature_costs,
+        selected_features = willump.evaluation.cascades_construct.select_features(feature_costs,
                                                                                   feature_importances, 0.23)
         selected_features = [feature_groups[i] for i in selected_features]
         self.assertEqual(selected_features, ["b", "c"])
