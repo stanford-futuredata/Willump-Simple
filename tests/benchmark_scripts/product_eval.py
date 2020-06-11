@@ -44,7 +44,7 @@ if __name__ == '__main__':
     preds = product_eval_pipeline(test_df, model, title_vectorizer, color_vectorizer, brand_vectorizer)
     time_elapsed = time.time() - start_time
 
-    print("Title Processing Time %fs Num Rows %d Throughput %f rows/sec" %
+    print("Elapsed Time %fs Num Rows %d Throughput %f rows/sec" %
           (time_elapsed, len(test_df), len(test_df) / time_elapsed))
 
     print("1 - RMSE Score: %f" % product_score(preds, test_y))
