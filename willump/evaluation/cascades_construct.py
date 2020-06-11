@@ -23,6 +23,8 @@ def construct_cascades(model_data: Mapping,
                                                         predict_function=predict_function,
                                                         score_function=score_function,
                                                         feature_groups=feature_groups)
+    print("Feature Costs: ", feature_costs)
+    print("Feature Importances: ", feature_importances)
     total_feature_cost = sum(feature_costs.values())
     best_selected_feature_indices, selected_threshold, min_expected_cost = None, None, np.inf
     last_candidate_length = 0

@@ -1,16 +1,14 @@
 import ast
-import copy
-import importlib
 import inspect
 import unittest
 
 from willump.evaluation.willump_executor import willump_execute, instrument_function
-from willump.graph.willump_graph_node import WillumpGraphNode
 from willump.evaluation.willump_graph_builder import WillumpGraphBuilder
+from willump.graph.willump_graph_node import WillumpGraphNode
 
 
-def foo(a):
-    return a + 1
+def foo(a, one):
+    return a + one
 
 
 def bar(b):
@@ -22,14 +20,14 @@ def model(m, numbers):
 
 
 def foobar(a, b, m):
-    c = foo(a)
+    c = foo(a, one=1)
     d = bar(b)
     return model(m, [c, d])
 
 
 @willump_execute()
 def foobar_decorated(a, b, m):
-    c = foo(a)
+    c = foo(a, one=1)
     d = bar(b)
     return model(m, [c, d])
 

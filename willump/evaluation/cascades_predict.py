@@ -108,7 +108,7 @@ def select_unapproximated_rows(input_data, unapproximated_indices):
     if isinstance(input_data, scipy.sparse.csr.csr_matrix) or isinstance(input_data, np.ndarray):
         return input_data[unapproximated_indices]
     elif isinstance(input_data, pd.DataFrame):
-        return input_data.iloc[unapproximated_indices]
+        return input_data.iloc[unapproximated_indices].reset_index().drop("index", axis=1)
     else:
         return input_data
 
@@ -117,9 +117,9 @@ def combine_predictions(approximate_predictions, full_predictions, cascade_thres
     final_predictions = np.zeros(approximate_predictions.shape, dtype=full_predictions.dtype)
     full_prediction_index = 0
     for i in range(len(final_predictions)):
-        if approximate_predictions[i] > cascade_threshold:
+        if approximate_predictions[i] >= cascade_threshold:
             final_predictions[i] = 1
-        elif approximate_predictions[i] < 1 - cascade_threshold:
+        elif approximate_predictions[i] <= 1 - cascade_threshold:
             final_predictions[i] = 0
         else:
             final_predictions[i] = full_predictions[full_prediction_index]

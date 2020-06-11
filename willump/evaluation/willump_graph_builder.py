@@ -32,10 +32,12 @@ class WillumpGraphBuilder(ast.NodeVisitor):
                 input_nodes.append(self._variable_dict[input_name])
             else:
                 input_nodes.append(None)
+        keywords = node.value.keywords
         function_node: WillumpGraphNode = WillumpGraphNode(function_name=function_name,
                                                            output_name=output_name,
                                                            input_names=input_names,
                                                            input_nodes=input_nodes,
+                                                           keywords=keywords,
                                                            cost=self._timing_map[output_name])
         self._variable_dict[output_name] = function_node
 
