@@ -62,9 +62,10 @@ def calculate_feature_importances(train_set_full_model, valid_X, valid_y, predic
     for i, (feature_group, valid_x) in enumerate(zip(feature_groups, valid_X)):
         valid_X_copy = valid_X.copy()
         if isinstance(valid_x, pd.DataFrame):
-            shuffle_order = valid_x.index.values
+            original_index = valid_x.index
+            shuffle_order = valid_x.index.values.copy()
             np.random.shuffle(shuffle_order)
-            valid_x_shuffled = valid_x.reindex(shuffle_order)
+            valid_x_shuffled = valid_x.reindex(shuffle_order).sort_index().set_index(original_index)
         else:
             shuffle_order = np.arange(valid_x.shape[0])
             np.random.shuffle(shuffle_order)
