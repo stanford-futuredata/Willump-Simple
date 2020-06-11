@@ -1,6 +1,7 @@
 from typing import Mapping, Callable, MutableMapping, List
 
 import numpy as np
+import pandas as pd
 import sklearn
 
 from willump.graph.willump_graph_node import WillumpGraphNode
@@ -58,9 +59,14 @@ def calculate_feature_importances(train_set_full_model, valid_X, valid_y, predic
     feature_importances: MutableMapping[str, float] = {}
     for i, (feature_group, valid_x) in enumerate(zip(feature_groups, valid_X)):
         valid_X_copy = valid_X.copy()
-        shuffle_order = np.arange(valid_x.shape[0])
-        np.random.shuffle(shuffle_order)
-        valid_x_shuffled = valid_x[shuffle_order]
+        if isinstance(valid_x, pd.DataFrame):
+            shuffle_order = valid_x.index.values
+            np.random.shuffle(shuffle_order)
+            valid_x_shuffled = valid_x.reindex(shuffle_order)
+        else:
+            shuffle_order = np.arange(valid_x.shape[0])
+            np.random.shuffle(shuffle_order)
+            valid_x_shuffled = valid_x[shuffle_order]
         valid_X_copy[i] = valid_x_shuffled
         shuffled_preds = predict_function(train_set_full_model, valid_X_copy)
         shuffled_score = score_function(valid_y, shuffled_preds)
