@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import sklearn
 from lightgbm import LGBMClassifier
 from sklearn import metrics
 import pickle
@@ -226,6 +227,128 @@ FEATURES = FEATURES + SOURCE_NAME_FEATURES  # pos included
 FEATURES = FEATURES + SOURCE_TAB_FEATURES  # pos included
 FEATURES = FEATURES + SOURCE_TYPE_FEATURES  # pos included
 FEATURES = FEATURES + CITY_FEATURES  # pos included
+
+
+def put_features_in_redis(df, name, db):
+    for key in df.index:
+        value = df.loc[key]
+        ser_value = pickle.dumps(value)
+        redis_key = name + "_" + str(int(key))
+        db.set(redis_key, ser_value)
+
+
+def load_music_dataset(redis=None):
+    X = load_combi_prep(folder=base_directory, split=None)
+    X = X.dropna(subset=["target"])
+
+    y = X["target"].values
+
+    cluster_one, join_col_cluster_one = add_cluster(base_directory, col='msno', size=UC_SIZE, overlap=True,
+                                                    positive=True, content=False)
+    cluster_two, join_col_cluster_two = add_cluster(base_directory, col='song_id', size=SC_SIZE, overlap=True,
+                                                    positive=True, content=False)
+    cluster_three, join_col_cluster_three = add_cluster(base_directory, col='artist_name', size=SC_SIZE, overlap=True,
+                                                        positive=True, content=False)
+    cluster_X = X.merge(cluster_one, how='left', on=join_col_cluster_one)
+    cluster_X = cluster_X.merge(cluster_two, how='left', on=join_col_cluster_two)
+    cluster_X = cluster_X.merge(cluster_three, how='left', on=join_col_cluster_three)
+
+    features_uf, join_col_uf = load_als_dataframe(base_directory, size=UF_SIZE, user=True, artist=False)
+    features_uf = features_uf.set_index(join_col_uf).astype("float64")
+    if redis is not None:
+        put_features_in_redis(features_uf, "features_uf", redis)
+    features_sf, join_col_sf = load_als_dataframe(base_directory, size=SF_SIZE, user=False, artist=False)
+    features_sf = features_sf.set_index(join_col_sf).astype("float64")
+    if redis is not None:
+        put_features_in_redis(features_sf, "features_sf", redis)
+
+    # USER CLUSTER FEATURES
+    uc_features, uc_join_col = scol_features(base_directory, cluster_X, 'cluster_msno_' + str(UC_SIZE), 'uc_')
+    uc_features = uc_features.set_index(uc_join_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(uc_features, "uc_features", redis)
+    # SONG CLUSTER FEATURES
+    sc_features, sc_join_col = scol_features(base_directory, cluster_X, 'cluster_song_id_' + str(SC_SIZE), 'sc_')
+    sc_features = sc_features.set_index(sc_join_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(sc_features, "sc_features", redis)
+    # ARTIST CLUSTER FEATURES
+    ac_features, ac_join_col = scol_features(base_directory, cluster_X, 'cluster_artist_name_' + str(UC_SIZE), 'ac_')
+    ac_features = ac_features.set_index(ac_join_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(ac_features, "ac_features", redis)
+    # USER FEATURES
+    us_features, us_col = scol_features(base_directory, X, 'msno', 'u_')
+    us_features = us_features.set_index(us_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(us_features, "us_features", redis)
+    # SONG FEATURES
+    ss_features, ss_col = scol_features(base_directory, X, 'song_id', 's_')
+    ss_features = ss_features.set_index(ss_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(ss_features, "ss_features", redis)
+    # ARTIST FEATURES
+    as_features, as_col = scol_features(base_directory, X, 'artist_name', 'a_')
+    as_features = as_features.set_index(as_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(as_features, "as_features", redis)
+    # GENRE FEATURES
+    gs_features, gs_col = scol_features(base_directory, X, 'genre_max', 'gmax_')
+    gs_features = gs_features.set_index(gs_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(gs_features, "gs_features", redis)
+    # CITY FEATURES
+    cs_features, cs_col = scol_features(base_directory, X, 'city', 'c_')
+    cs_features = cs_features.set_index(cs_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(cs_features, "cs_features", redis)
+    # AGE FEATURES
+    ages_features, ages_col = scol_features(base_directory, X, 'bd', 'age_')
+    ages_features = ages_features.set_index(ages_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(ages_features, "ages_features", redis)
+    # LANGUAGE FEATURES
+    ls_features, ls_col = scol_features(base_directory, X, 'language', 'lang_')
+    ls_features = ls_features.set_index(ls_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(ls_features, "ls_features", redis)
+    # GENDER FEATURES
+    gender_features, gender_col = scol_features(base_directory, X, 'gender', 'gen_')
+    gender_features = gender_features.set_index(gender_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(gender_features, "gender_features", redis)
+    # COMPOSER FEATURES
+    composer_features, composer_col = scol_features(base_directory, X, 'composer', 'comp_')
+    composer_features = composer_features.set_index(composer_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(composer_features, "composer_features", redis)
+    # LYRICIST FEATURES
+    lyrs_features, lyrs_col = scol_features(base_directory, X, 'lyricist', 'ly_')
+    lyrs_features = lyrs_features.set_index(lyrs_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(lyrs_features, "lyrs_features", redis)
+    # SOURCE NAME FEATURES
+    sns_features, sns_col = scol_features(base_directory, X, 'source_screen_name', 'sn_')
+    sns_features = sns_features.set_index(sns_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(sns_features, "sns_features", redis)
+    # SOURCE TAB FEATURES
+    stabs_features, stabs_col = scol_features(base_directory, X, 'source_system_tab', 'sst_')
+    stabs_features = stabs_features.set_index(stabs_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(stabs_features, "stabs_features", redis)
+    # SOURCE TYPE FEATURES
+    stypes_features, stypes_col = scol_features(base_directory, X, 'source_type', 'st_')
+    stypes_features = stypes_features.set_index(stypes_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(stypes_features, "stypes_features", redis)
+    # SOURCE TYPE FEATURES
+    regs_features, regs_col = scol_features(base_directory, X, 'registered_via', 'rv_')
+    regs_features = regs_features.set_index(regs_col).astype("float64")
+    if redis is not None:
+        put_features_in_redis(regs_features, "regs_features", redis)
+
+    return sklearn.model_selection.train_test_split(cluster_X, y, test_size=0.2, random_state=42)
 
 
 def load_combi_prep(folder='data_new/', split=None):

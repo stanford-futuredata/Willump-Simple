@@ -60,22 +60,7 @@ def music_eval_pipeline(input_X, model):
 
 
 if __name__ == '__main__':
-    X = load_combi_prep(folder=base_directory, split=None)
-    X = X.dropna(subset=["target"])
-
-    y = X["target"].values
-
-    cluster_one, join_col_cluster_one = add_cluster(base_directory, col='msno', size=UC_SIZE, overlap=True,
-                                                    positive=True, content=False)
-    cluster_two, join_col_cluster_two = add_cluster(base_directory, col='song_id', size=SC_SIZE, overlap=True,
-                                                    positive=True, content=False)
-    cluster_three, join_col_cluster_three = add_cluster(base_directory, col='artist_name', size=SC_SIZE, overlap=True,
-                                                        positive=True, content=False)
-    cluster_X = X.merge(cluster_one, how='left', on=join_col_cluster_one)
-    cluster_X = cluster_X.merge(cluster_two, how='left', on=join_col_cluster_two)
-    cluster_X = cluster_X.merge(cluster_three, how='left', on=join_col_cluster_three)
-
-    _, test_X, _, test_y = sklearn.model_selection.train_test_split(cluster_X, y, test_size=0.2, random_state=42)
+    _, test_X, _, test_y = load_music_dataset(redis=None)
 
     model = pickle.load(open(base_directory + "model.pk", "rb"))
 
