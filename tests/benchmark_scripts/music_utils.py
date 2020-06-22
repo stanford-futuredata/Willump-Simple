@@ -455,4 +455,4 @@ def compute_features(input_X, db):
                      "lyrs_features", "sns_features", "stabs_features", "stypes_features",
                      "regs_features"]
     feature_costs = {name: 1.0 for name in feature_names}
-    return features, feature_costs
+    return features, feature_costs, feature_names
