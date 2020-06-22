@@ -23,8 +23,8 @@ def construct_cascades(model_data: Mapping,
                                                         predict_function=predict_function,
                                                         score_function=score_function,
                                                         feature_groups=feature_groups)
-    print("Feature Costs: ", feature_costs)
-    print("Feature Importances: ", feature_importances)
+    pretty_print(feature_costs, "Cost")
+    pretty_print(feature_importances, "Importance")
     total_feature_cost = sum(feature_costs.values())
     best_selected_feature_indices, selected_threshold, min_expected_cost = None, None, np.inf
     last_candidate_length = 0
@@ -35,13 +35,13 @@ def construct_cascades(model_data: Mapping,
         if len(selected_indices) != last_candidate_length:
             last_candidate_length = len(selected_indices)
             selected_feature_cost = sum(feature_costs[feature_groups[i]] for i in selected_indices)
-            threshold, expected_cost = calculate_feature_set_performance(train_X, train_y, valid_X, valid_y,
-                                                                         selected_indices,
-                                                                         train_function, predict_function,
-                                                                         predict_proba_function, score_function,
-                                                                         train_set_full_model,
-                                                                         selected_feature_cost,
-                                                                         total_feature_cost)
+            threshold, fraction_approximated = calculate_feature_set_performance(train_X, train_y, valid_X, valid_y,
+                                                                                 selected_indices,
+                                                                                 train_function, predict_function,
+                                                                                 predict_proba_function, score_function,
+                                                                                 train_set_full_model)
+            expected_cost = fraction_approximated * selected_feature_cost + \
+                            (1 - fraction_approximated) * total_feature_cost
             print("Cutoff: %f Threshold: %f Expected Cost: %f" % (cost_cutoff, threshold, expected_cost))
             if expected_cost < min_expected_cost:
                 best_selected_feature_indices = selected_indices
@@ -116,8 +116,6 @@ def calculate_feature_set_performance(train_X, train_y, valid_X, valid_y, select
                                       train_function, predict_function,
                                       predict_proba_function, score_function,
                                       train_set_full_model,
-                                      selected_cost,
-                                      total_cost,
                                       accuracy_threshold=0.001):
     full_model_preds = predict_function(train_set_full_model, valid_X)
     full_model_score = score_function(valid_y, full_model_preds)
@@ -126,8 +124,8 @@ def calculate_feature_set_performance(train_X, train_y, valid_X, valid_y, select
     approximate_model = train_function(train_y, selected_train_X)
     approximate_confidences = predict_proba_function(approximate_model, selected_valid_X)
     approximate_preds = predict_function(approximate_model, selected_valid_X)
-    threshold_to_expected_query_cost_map = {}
-    for cascade_threshold in [0.6, 0.7, 0.8, 0.9, 1.0]:
+    best_threshold, best_frac = None, None
+    for cascade_threshold in [1.0, 0.9, 0.8, 0.7, 0.6]:
         cascade_preds = full_model_preds.copy()
         num_approximated = 0
         for i in range(len(approximate_confidences)):
@@ -136,11 +134,10 @@ def calculate_feature_set_performance(train_X, train_y, valid_X, valid_y, select
                 cascade_preds[i] = approximate_preds[i]
         combined_score = score_function(valid_y, cascade_preds)
         frac_approximated = num_approximated / len(cascade_preds)
-        combined_cost = frac_approximated * selected_cost + (1 - frac_approximated) * total_cost
         if combined_score > full_model_score - accuracy_threshold:
-            threshold_to_expected_query_cost_map[cascade_threshold] = combined_cost
-    best_threshold, best_cost = min(threshold_to_expected_query_cost_map.items(), key=lambda x: x[1])
-    return best_threshold, best_cost
+            best_threshold, best_frac = cascade_threshold, frac_approximated
+    assert (best_threshold is not None and best_frac is not None)
+    return best_threshold, best_frac
 
 
 def train_test_split(X, y, test_size, random_state):
@@ -151,3 +148,9 @@ def train_test_split(X, y, test_size, random_state):
         train_X.append(train_x)
         valid_X.append(valid_x)
     return train_X, valid_X, train_y, valid_y
+
+
+def pretty_print(dictionary: Mapping, what: str) -> None:
+    ranking = sorted(list(dictionary.keys()), key=lambda x: dictionary[x])
+    for r in ranking:
+        print("Feature: %s %s: %f" % (r, what, dictionary[r]))
