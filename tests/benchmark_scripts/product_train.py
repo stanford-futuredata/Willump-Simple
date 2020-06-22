@@ -14,7 +14,7 @@ train_cascades_dict = {}
                  predict_function=product_predict,
                  predict_proba_function=product_predict_proba,
                  score_function=product_score,
-                 train_cascades_dict=train_cascades_dict)
+                 train_cascades_params=train_cascades_dict)
 def product_train_pipeline(input_x, input_y, title_vect, color_vect, brand_vect):
     title_result = transform_data(input_x, title_vect)
     color_result = transform_data(input_x, color_vect)

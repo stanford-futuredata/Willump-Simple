@@ -19,7 +19,7 @@ else:
 
 @willump_execute(predict_function=toxic_predict,
                  predict_proba_function=toxic_predict_proba,
-                 predict_cascades_dict=cascades_dict)
+                 predict_cascades_params=cascades_dict)
 def toxic_eval_pipeline(input_x, model, word_vect, char_vect):
     word_features = transform_data(input_x, word_vect)
     char_features = transform_data(input_x, char_vect)

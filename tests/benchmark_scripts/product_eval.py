@@ -19,7 +19,7 @@ else:
 
 @willump_execute(predict_function=product_predict,
                  predict_proba_function=product_predict_proba,
-                 predict_cascades_dict=cascades_dict)
+                 predict_cascades_params=cascades_dict)
 def product_eval_pipeline(input_x, model, title_vect, color_vect, brand_vect):
     title_result = transform_data(input_x, title_vect)
     color_result = transform_data(input_x, color_vect)

@@ -41,8 +41,8 @@ def instrument_function(func: Callable, timing_map: MutableMapping[str, float],
 
 def willump_execute(train_function: Callable = None, predict_function: Callable = None,
                     predict_proba_function: Callable = None, score_function: Callable = None,
-                    train_cascades_dict: MutableMapping = None,
-                    predict_cascades_dict: Mapping = None) -> Callable:
+                    train_cascades_params: MutableMapping = None,
+                    predict_cascades_params: Mapping = None) -> Callable:
     def willump_execute_inner(func: Callable) -> Callable:
         func_id: str = "willump_func_id%s" % func.__name__
 
@@ -61,19 +61,19 @@ def willump_execute(train_function: Callable = None, predict_function: Callable 
                 graph_builder = WillumpGraphBuilder(timing_map)
                 graph_builder.visit(function_ast)
                 model_node: WillumpGraphNode = graph_builder.get_model_node()
-                if train_cascades_dict is not None:
+                if train_cascades_params is not None:
                     construct_cascades(model_data,
                                        model_node,
                                        train_function, predict_function,
                                        predict_proba_function, score_function,
-                                       train_cascades_dict)
-                    return train_cascades_dict["full_model"]
-                elif predict_cascades_dict is not None:
+                                       train_cascades_params)
+                    return train_cascades_params["full_model"]
+                elif predict_cascades_params is not None:
                     cascades_func = predict_cascades(func,
                                                      model_node,
                                                      predict_function,
                                                      predict_proba_function,
-                                                     predict_cascades_dict)
+                                                     predict_cascades_params)
                     willump_final_func_set[func_id] = cascades_func
                     return cascades_func(*args)
                 else:

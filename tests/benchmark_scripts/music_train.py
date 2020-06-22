@@ -15,7 +15,7 @@ train_cascades_dict = {}
                  predict_function=music_predict,
                  predict_proba_function=music_predict_proba,
                  score_function=music_score,
-                 train_cascades_dict=train_cascades_dict)
+                 train_cascades_params=train_cascades_dict)
 def music_train_pipeline(input_X, input_y):
     user_latent_features = get_features_from_redis(input_X, column="msno", name="features_uf", db=db)
     song_latent_features = get_features_from_redis(input_X, column="song_id", name="features_sf", db=db)

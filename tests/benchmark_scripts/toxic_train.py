@@ -14,7 +14,7 @@ train_cascades_dict = {}
                  predict_function=toxic_predict,
                  predict_proba_function=toxic_predict_proba,
                  score_function=toxic_score,
-                 train_cascades_dict=train_cascades_dict)
+                 train_cascades_params=train_cascades_dict)
 def toxic_train_pipeline(input_x, input_y, word_vect, char_vect):
     word_features = transform_data(input_x, word_vect)
     char_features = transform_data(input_x, char_vect)
