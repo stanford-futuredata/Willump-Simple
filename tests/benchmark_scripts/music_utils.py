@@ -36,7 +36,7 @@ def music_predict(model, X_list):
         return model.predict(X)
 
 
-def music_predict_proba(model, X_list):
+def music_confidence(model, X_list):
     X = pd.concat(X_list, axis=1)
     X = X[[f for f in FEATURES if f in X.columns]]
     return model.predict_proba(X)[:, 1]

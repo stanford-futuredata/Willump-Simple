@@ -2,7 +2,7 @@ import pickle
 
 import redis
 
-from music_utils import get_features_from_redis, music_train, music_predict, music_predict_proba, music_score, \
+from music_utils import get_features_from_redis, music_train, music_predict, music_confidence, music_score, \
     load_music_dataset, base_directory
 from willump.evaluation.willump_executor import willump_execute
 
@@ -13,7 +13,7 @@ train_cascades_dict = {}
 
 @willump_execute(train_function=music_train,
                  predict_function=music_predict,
-                 predict_proba_function=music_predict_proba,
+                 confidence_function=music_confidence,
                  score_function=music_score,
                  train_cascades_params=train_cascades_dict)
 def music_train_pipeline(input_X, input_y):

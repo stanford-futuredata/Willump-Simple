@@ -40,7 +40,7 @@ def instrument_function(func: Callable, timing_map: MutableMapping[str, float],
 
 
 def willump_execute(train_function: Callable = None, predict_function: Callable = None,
-                    predict_proba_function: Callable = None, score_function: Callable = None,
+                    confidence_function: Callable = None, score_function: Callable = None,
                     train_cascades_params: MutableMapping = None,
                     predict_cascades_params: Mapping = None) -> Callable:
     def willump_execute_inner(func: Callable) -> Callable:
@@ -65,14 +65,14 @@ def willump_execute(train_function: Callable = None, predict_function: Callable 
                     construct_cascades(model_data,
                                        model_node,
                                        train_function, predict_function,
-                                       predict_proba_function, score_function,
+                                       confidence_function, score_function,
                                        train_cascades_params)
                     return train_cascades_params["full_model"]
                 elif predict_cascades_params is not None:
                     cascades_func = predict_cascades(func,
                                                      model_node,
                                                      predict_function,
-                                                     predict_proba_function,
+                                                     confidence_function,
                                                      predict_cascades_params)
                     willump_final_func_set[func_id] = cascades_func
                     return cascades_func(*args)

@@ -29,7 +29,7 @@ def put_features_in_redis(df, name):
 
 
 @willump_execute(predict_function=music_predict,
-                 predict_proba_function=music_predict_proba,
+                 confidence_function=music_confidence,
                  predict_cascades_params=cascades_dict)
 def music_eval_pipeline(input_X, model):
     user_latent_features = get_features_from_redis(input_X, column="msno", name="features_uf", db=db)

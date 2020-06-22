@@ -21,7 +21,7 @@ def toxic_predict(model, X_list):
         return model.predict(X)
 
 
-def toxic_predict_proba(model, X_list):
+def toxic_confidence(model, X_list):
     X = scipy.sparse.hstack([*X_list], format="csr")
     if X.shape[0] == 0:
         return np.zeros(0, dtype=np.float64)

@@ -21,7 +21,7 @@ def product_predict(model, x_list):
         return model.predict(x)
 
 
-def product_predict_proba(model, x_list):
+def product_confidence(model, x_list):
     x = scipy.sparse.hstack([*x_list], format="csr")
     if x.shape[0] == 0:
         return np.zeros(0, dtype=np.float64)

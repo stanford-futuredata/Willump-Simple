@@ -12,7 +12,7 @@ train_cascades_dict = {}
 
 @willump_execute(train_function=product_train,
                  predict_function=product_predict,
-                 predict_proba_function=product_predict_proba,
+                 confidence_function=product_confidence,
                  score_function=product_score,
                  train_cascades_params=train_cascades_dict)
 def product_train_pipeline(input_x, input_y, title_vect, color_vect, brand_vect):

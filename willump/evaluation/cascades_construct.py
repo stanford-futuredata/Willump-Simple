@@ -10,7 +10,7 @@ from willump.graph.willump_graph_node import WillumpGraphNode
 def construct_cascades(model_data: Mapping,
                        model_node: WillumpGraphNode,
                        train_function: Callable, predict_function: Callable,
-                       predict_proba_function: Callable, score_function: Callable,
+                       confidence_function: Callable, score_function: Callable,
                        cascades_dict: MutableMapping) -> None:
     X, y = model_data["inputs"], model_data["params"]
     train_X, valid_X, train_y, valid_y = train_test_split(X, y, test_size=0.25, random_state=42)
@@ -38,7 +38,7 @@ def construct_cascades(model_data: Mapping,
             threshold, fraction_approximated = calculate_feature_set_performance(train_X, train_y, valid_X, valid_y,
                                                                                  selected_indices,
                                                                                  train_function, predict_function,
-                                                                                 predict_proba_function, score_function,
+                                                                                 confidence_function, score_function,
                                                                                  train_set_full_model)
             expected_cost = fraction_approximated * selected_feature_cost + \
                             (1 - fraction_approximated) * total_feature_cost
@@ -114,7 +114,7 @@ def select_features(feature_costs, feature_importances, cost_cutoff):
 
 def calculate_feature_set_performance(train_X, train_y, valid_X, valid_y, selected_indices,
                                       train_function, predict_function,
-                                      predict_proba_function, score_function,
+                                      confidence_function, score_function,
                                       train_set_full_model,
                                       accuracy_threshold=0.001):
     full_model_preds = predict_function(train_set_full_model, valid_X)
@@ -122,7 +122,7 @@ def calculate_feature_set_performance(train_X, train_y, valid_X, valid_y, select
     selected_train_X = [train_X[i] for i in selected_indices]
     selected_valid_X = [valid_X[i] for i in selected_indices]
     approximate_model = train_function(train_y, selected_train_X)
-    approximate_confidences = predict_proba_function(approximate_model, selected_valid_X)
+    approximate_confidences = confidence_function(approximate_model, selected_valid_X)
     approximate_preds = predict_function(approximate_model, selected_valid_X)
     best_threshold, best_frac = None, None
     for cascade_threshold in [1.0, 0.9, 0.8, 0.7, 0.6]:

@@ -12,7 +12,7 @@ train_cascades_dict = {}
 
 @willump_execute(train_function=toxic_train,
                  predict_function=toxic_predict,
-                 predict_proba_function=toxic_predict_proba,
+                 confidence_function=toxic_confidence,
                  score_function=toxic_score,
                  train_cascades_params=train_cascades_dict)
 def toxic_train_pipeline(input_x, input_y, word_vect, char_vect):
