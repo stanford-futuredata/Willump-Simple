@@ -23,8 +23,7 @@ def construct_cascades(model_data: Mapping,
                                                         predict_function=predict_function,
                                                         score_function=score_function,
                                                         feature_groups=feature_groups)
-    pretty_print(feature_costs, "Cost")
-    pretty_print(feature_importances, "Importance")
+    pretty_print(feature_importances, feature_costs)
     total_feature_cost = sum(feature_costs.values())
     best_selected_feature_indices, selected_threshold, min_expected_cost = None, None, np.inf
     last_candidate_length = 0
@@ -150,7 +149,7 @@ def train_test_split(X, y, test_size, random_state):
     return train_X, valid_X, train_y, valid_y
 
 
-def pretty_print(dictionary: Mapping, what: str) -> None:
-    ranking = sorted(list(dictionary.keys()), key=lambda x: dictionary[x])
+def pretty_print(importances, costs) -> None:
+    ranking = sorted(list(importances.keys()), key=lambda x: -1 * importances[x])
     for r in ranking:
-        print("Feature: %s %s: %f" % (r, what, dictionary[r]))
+        print("Feature: %-25s Cost: %6.3f Importance: %6.3f" % (r, costs[r], importances[r]))
